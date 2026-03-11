@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Clasificador UNSPSC — Nivel Clase</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#080f1a;color:#e2e8f0;min-height:100vh;}
+a{color:#60a5fa;} code{font-family:monospace;background:#1e293b;padding:2px 6px;border-radius:4px;font-size:12px;}
+
+#hdr{background:linear-gradient(135deg,#0c1f36,#11152a);padding:18px 32px;border-bottom:1px solid #162035;}
+.hi{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:14px;}
+.hico{background:linear-gradient(135deg,#2563eb,#7c3aed);border-radius:12px;padding:9px 12px;font-size:24px;}
+.htit{font-size:19px;font-weight:800;color:#f0f4ff;}
+.hsub{font-size:12px;color:#5d7a99;margin-top:2px;}
+#body{max-width:960px;margin:0 auto;padding:20px 16px;}
+
+.card{margin-bottom:14px;background:#0c1828;border:1px solid #162035;border-radius:12px;overflow:hidden;}
+.chdr{padding:11px 17px;border-bottom:1px solid #162035;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.015);}
+.snum{background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;border-radius:999px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;}
+.ctit{font-weight:700;font-size:14px;color:#f0f4ff;}
+.cbdy{padding:16px 18px;}
+
+/* API Key */
+#apiguide{background:rgba(251,191,36,0.07);border:1px solid #ca8a04;border-radius:12px;padding:18px 20px;margin-bottom:18px;}
+#apiguide h3{color:#fbbf24;font-size:14px;margin-bottom:12px;}
+.api-step{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#fef3c7;margin-bottom:8px;}
+.api-step-num{background:#ca8a04;color:#000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;flex-shrink:0;margin-top:1px;}
+.api-input-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px;}
+#apiinput{flex:1;min-width:260px;background:#0c1828;border:1px solid #ca8a04;border-radius:7px;padding:9px 12px;color:#fef3c7;font-size:13px;font-family:monospace;outline:none;}
+#apiinput::placeholder{color:#7c6010;}
+#apisave{background:#ca8a04;color:#000;border:none;border-radius:7px;padding:9px 18px;font-size:13px;font-weight:800;cursor:pointer;}
+#api-saved-row{display:none;background:rgba(74,222,128,0.08);border:1px solid #4ade8066;border-radius:8px;padding:10px 14px;font-size:13px;color:#4ade80;align-items:center;gap:10px;margin-top:10px;}
+#testbtn{background:rgba(96,165,250,0.1);border:1px solid #3b82f666;color:#60a5fa;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;display:none;margin-top:8px;}
+#testresult{margin-top:8px;font-size:12px;padding:8px 12px;border-radius:7px;display:none;line-height:1.6;}
+
+/* Dropzone */
+#dz{border:2px dashed #1e3a5f;border-radius:10px;padding:28px 20px;text-align:center;cursor:pointer;transition:all .2s;}
+#dz:hover,#dz.drag{border-color:#7c3aed;background:rgba(124,58,237,0.05);}
+#fok{color:#4ade80;font-weight:700;font-size:13px;display:none;margin-top:8px;}
+#ferr{color:#f87171;font-size:13px;display:none;margin-top:10px;padding:10px 14px;background:rgba(239,68,68,0.08);border:1px solid #ef444455;border-radius:8px;}
+
+/* Steps */
+#s2,#s3,#s4{display:none;}
+.cbtn{padding:6px 14px;border-radius:7px;border:1px solid #1e3a5f;background:transparent;color:#5d7a99;cursor:pointer;font-size:13px;margin:3px;transition:all .15s;}
+.cbtn.active{border-color:#7c3aed;background:rgba(124,58,237,0.12);color:#a78bfa;font-weight:700;}
+#prevbox{display:none;background:rgba(124,58,237,0.05);border-left:3px solid #7c3aed;border-radius:8px;padding:9px 13px;font-size:12px;margin-top:10px;}
+
+.note{background:rgba(167,139,250,0.07);border:1px solid #3b1f6b;border-radius:9px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#7c9cbf;}
+.note strong{color:#a78bfa;}
+.bprimary{background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;border:none;padding:11px 24px;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 18px rgba(124,58,237,.3);}
+.bgreen{background:linear-gradient(135deg,#16a34a,#166534);color:#fff;border:none;padding:11px 24px;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;}
+.bstop{background:rgba(239,68,68,.08);color:#f87171;border:1px solid #7f1d1d;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;}
+
+/* Progress */
+#pwrap{display:none;}
+#pbg{background:#162035;border-radius:999px;height:8px;overflow:hidden;margin:7px 0 9px;}
+#pbar{height:100%;background:linear-gradient(90deg,#2563eb,#7c3aed,#a78bfa);border-radius:999px;transition:width .4s;width:0%;}
+#pinfo{display:flex;justify-content:space-between;font-size:12px;color:#5d7a99;}
+#ppct{color:#a78bfa;font-weight:700;}
+#errlog{display:none;background:#0a0f1a;border:1px solid #7f1d1d;border-radius:8px;padding:10px 12px;margin-top:10px;font-size:11px;font-family:monospace;color:#f87171;max-height:130px;overflow-y:auto;}
+
+/* Stats */
+#swrap{display:none;flex-wrap:wrap;gap:9px;margin-top:14px;}
+.sbox{background:rgba(255,255,255,.025);border:1px solid #162035;border-radius:10px;padding:10px 16px;text-align:center;min-width:82px;}
+.sval{font-size:20px;font-weight:800;}
+.slbl{font-size:10px;color:#3d5a7a;margin-top:2px;}
+
+/* Results */
+#rlist{margin-bottom:14px;}
+.rrow{margin-bottom:5px;background:#0c1828;border:1px solid #162035;border-radius:9px;overflow:hidden;}
+.rhdr{padding:10px 13px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.rhdr:hover{background:rgba(255,255,255,.02);}
+.robj{font-size:12px;color:#cbd5e1;flex:1;min-width:0;}
+.rnum{font-size:10px;color:#2d4a6b;font-weight:700;margin-right:4px;}
+.rbadges{display:flex;align-items:center;gap:4px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;}
+.badge{border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700;border:1px solid;}
+.rcodes{display:none;padding:0 13px 12px;border-top:1px solid #162035;}
+.cgrid{display:flex;flex-wrap:wrap;gap:4px;padding-top:10px;}
+.chip{border-radius:7px;padding:3px 9px;display:flex;align-items:center;gap:5px;border:1px solid;font-size:11px;cursor:help;}
+.cid{font-weight:800;font-size:12px;}
+.ctitle{color:#7c9cbf;}
+.clevel,.crel{border-radius:5px;padding:1px 6px;font-size:10px;font-weight:700;border:1px solid;}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <div class="hi">
+    <div class="hico">🏷️</div>
+    <div>
+      <div class="htit">Clasificador UNSPSC — Nivel Clase</div>
+      <div class="hsub">Contratos de construcción Colombia · Llamada directa a la API · Sin proxy</div>
+    </div>
+  </div>
+</div>
+
+<div id="body">
+
+<!-- API Key -->
+<div id="apiguide">
+  <h3>🔑 Paso previo: configura tu API Key de Anthropic</h3>
+  <div class="api-step"><span class="api-step-num">1</span><span>Ve a <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → <strong style="color:#fbbf24">API Keys</strong> → <strong style="color:#fbbf24">Create Key</strong></span></div>
+  <div class="api-step"><span class="api-step-num">2</span><span>Copia la clave (empieza con <code>sk-ant-</code>). <strong style="color:#fbbf24">Solo se muestra una vez.</strong></span></div>
+  <div class="api-step"><span class="api-step-num">3</span><span>Pégala abajo, guárdala y prueba la conexión.</span></div>
+  <div class="api-input-row">
+    <input id="apiinput" type="password" placeholder="sk-ant-api03-..." autocomplete="off"/>
+    <button id="apisave" onclick="saveKey()">Guardar ▶</button>
+  </div>
+  <button id="testbtn" onclick="testConnection()">🔌 Probar conexión</button>
+  <div id="testresult"></div>
+  <div id="api-saved-row">
+    <span>✅ Clave guardada</span>
+    <button onclick="changeKey()" style="background:transparent;border:1px solid #4ade8066;color:#4ade80;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px;">Cambiar</button>
+  </div>
+</div>
+
+<!-- PASO 1 -->
+<div class="card">
+  <div class="chdr"><span class="snum">1</span><span class="ctit">Cargar archivo Excel con contratos</span></div>
+  <div class="cbdy">
+    <div id="dz" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="onDrop(event)" onclick="document.getElementById('fi').click()">
+      <div style="font-size:36px;margin-bottom:8px">📂</div>
+      <div style="color:#5d7a99;font-size:13px">Arrastra tu Excel aquí o <span style="color:#7c3aed;text-decoration:underline">haz clic para seleccionar</span></div>
+      <div style="color:#2d4a6b;font-size:11px;margin-top:4px">Compatible con .xlsx y .xls</div>
+      <div id="fok"></div>
+    </div>
+    <div id="ferr"></div>
+    <input id="fi" type="file" accept=".xlsx,.xls" style="display:none" onchange="onFileInput(event)"/>
+  </div>
+</div>
+
+<!-- PASO 2 -->
+<div class="card" id="s2">
+  <div class="chdr"><span class="snum">2</span><span class="ctit">Seleccionar columna del objeto del contrato</span></div>
+  <div class="cbdy">
+    <p style="color:#5d7a99;font-size:13px;margin-bottom:10px"><strong id="rcnt" style="color:#e2e8f0"></strong> contratos · <strong id="ccnt" style="color:#e2e8f0"></strong> columnas</p>
+    <div id="colbtns"></div>
+    <div id="prevbox"><strong style="color:#a78bfa">Vista previa: </strong><span id="prevtxt" style="color:#cbd5e1"></span></div>
+  </div>
+</div>
+
+<!-- PASO 3 -->
+<div class="card" id="s3">
+  <div class="chdr"><span class="snum">3</span><span class="ctit">Clasificar con IA</span></div>
+  <div class="cbdy">
+    <div class="note">
+      <strong>⚡ 2 fases por contrato:</strong><br>
+      <strong style="color:#60a5fa">Fase 1</strong> — Identifica tipo de obra (civil, vial, interventoría) y descompone materiales, equipos y servicios.<br>
+      <strong style="color:#a78bfa">Fase 2</strong> — Asigna todos los códigos UNSPSC a nivel Clase con relevancia y justificación.
+    </div>
+    <button class="bprimary" id="runbtn" onclick="runAll()">🚀 Iniciar clasificación</button>
+    <div id="pwrap" style="margin-top:14px;">
+      <div id="pinfo"><span>Procesando <strong id="pcur" style="color:#e2e8f0">0</strong> de <strong id="ptot" style="color:#e2e8f0">0</strong></span><span id="ppct">0%</span></div>
+      <div id="pbg"><div id="pbar"></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span id="plast" style="font-size:11px;color:#2d4a6b"></span>
+        <button class="bstop" onclick="stopFlag=true">⏹ Detener</button>
+      </div>
+      <div id="errlog"></div>
+    </div>
+    <div id="swrap">
+      <div class="sbox"><div>📋</div><div class="sval" id="s-ct" style="color:#3b82f6">0</div><div class="slbl">Contratos</div></div>
+      <div class="sbox"><div>🏷️</div><div class="sval" id="s-uq" style="color:#7c3aed">0</div><div class="slbl">Únicos</div></div>
+      <div class="sbox"><div>📊</div><div class="sval" id="s-av" style="color:#a78bfa">0</div><div class="slbl">Promedio</div></div>
+      <div class="sbox"><div>🔷</div><div class="sval" id="s-cl" style="color:#a78bfa">0</div><div class="slbl">Nivel Clase</div></div>
+      <div class="sbox"><div>🔝</div><div class="sval" id="s-mx" style="color:#10b981">0</div><div class="slbl">Máx.</div></div>
+      <div class="sbox"><div>❌</div><div class="sval" id="s-er" style="color:#ef4444">0</div><div class="slbl">Errores</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PASO 4 -->
+<div class="card" id="s4">
+  <div class="chdr"><span class="snum">4</span><span class="ctit" id="s4tit">Resultados</span></div>
+  <div class="cbdy">
+    <div id="rlist"></div>
+    <p id="rmore" style="text-align:center;color:#2d4a6b;font-size:11px;margin:5px 0 0;"></p>
+    <button class="bgreen" id="dlbtn" style="display:none" onclick="dlResults()">📥 Descargar CSV — Contratos + Códigos UNSPSC</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ── Estado ─────────────────────────────────────────────────────────────────
+let API_KEY='', headers=[], rows=[], colIdx=-1, results=[], stopFlag=false;
+const NC={Clase:'#a78bfa',Familia:'#60a5fa',Segmento:'#94a3b8'};
+const RC={Alta:'#4ade80',Media:'#fbbf24',Baja:'#64748b'};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const API_URL='https://api.anthropic.com/v1/messages';
+
+// ── API Key ────────────────────────────────────────────────────────────────
+function saveKey(){
+  const v=document.getElementById('apiinput').value.trim();
+  if(!v.startsWith('sk-ant-')){alert('La clave debe empezar con sk-ant-');return;}
+  API_KEY=v;
+  document.querySelector('.api-input-row').style.display='none';
+  document.getElementById('api-saved-row').style.display='flex';
+  document.getElementById('testbtn').style.display='inline-block';
+}
+function changeKey(){
+  document.querySelector('.api-input-row').style.display='flex';
+  document.getElementById('api-saved-row').style.display='none';
+  document.getElementById('testbtn').style.display='none';
+  document.getElementById('testresult').style.display='none';
+  document.getElementById('apiinput').value='';
+  API_KEY='';
+}
+document.getElementById('apiinput').addEventListener('keydown',e=>{if(e.key==='Enter')saveKey();});
+
+async function testConnection(){
+  const el=document.getElementById('testresult');
+  el.style.display='block';
+  el.style.cssText='display:block;margin-top:8px;font-size:12px;padding:8px 12px;border-radius:7px;background:rgba(251,191,36,0.08);border:1px solid #ca8a04;color:#fbbf24;line-height:1.6;';
+  el.textContent='🔄 Probando conexión directa…';
+  try{
+    const r=await fetch(API_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:15,messages:[{role:'user',content:'Di OK'}]})
+    });
+    const d=await r.json();
+    if(d.content?.[0]){
+      el.style.cssText='display:block;margin-top:8px;font-size:12px;padding:8px 12px;border-radius:7px;background:rgba(74,222,128,0.08);border:1px solid #4ade8066;color:#4ade80;line-height:1.6;';
+      el.textContent='✅ Conexión exitosa. La API responde directamente. Listo para clasificar.';
+    } else {
+      el.style.cssText='display:block;margin-top:8px;font-size:12px;padding:8px 12px;border-radius:7px;background:rgba(239,68,68,0.08);border:1px solid #ef444455;color:#f87171;line-height:1.6;';
+      el.textContent='❌ Error de API: '+(d.error?.message||JSON.stringify(d));
+    }
+  }catch(e){
+    el.style.cssText='display:block;margin-top:8px;font-size:12px;padding:8px 12px;border-radius:7px;background:rgba(239,68,68,0.08);border:1px solid #ef444455;color:#f87171;line-height:1.6;';
+    el.innerHTML='❌ Error de red: <strong>'+e.message+'</strong><br>⚠️ Si ves "CORS" o "Failed to fetch", estás abriendo el archivo desde <code>file://</code>. Ejecuta el servidor local con el comando del archivo <strong>INICIAR.bat</strong> (Windows) o <strong>iniciar.sh</strong> (Mac/Linux) incluido en esta carpeta.';
+  }
+}
+
+// ── Leer Excel con SheetJS ────────────────────────────────────────────────
+function onDrop(e){e.preventDefault();document.getElementById('dz').classList.remove('drag');loadFile(e.dataTransfer.files[0]);}
+function onFileInput(e){loadFile(e.target.files[0]);}
+
+function showFerr(msg){const el=document.getElementById('ferr');el.innerHTML='⚠️ '+msg;el.style.display='block';}
+function clearFerr(){document.getElementById('ferr').style.display='none';}
+
+async function loadFile(f){
+  clearFerr();
+  if(!f)return;
+  if(!['xlsx','xls'].includes(f.name.split('.').pop().toLowerCase())){showFerr('Usa un archivo .xlsx o .xls');return;}
+  try{
+    const buf=await f.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    if(!data||data.length<2){showFerr('El archivo parece vacío o sin datos.');return;}
+    headers=data[0].map((c,i)=>String(c||'').trim()||'Col'+(i+1));
+    rows=data.slice(1).filter(r=>r&&r.some(c=>String(c||'').trim()!==''));
+    if(!rows.length){showFerr('No se encontraron filas con datos.');return;}
+    colIdx=-1; results=[];
+    document.getElementById('fok').textContent='✓ '+f.name+' — '+rows.length+' contratos cargados';
+    document.getElementById('fok').style.display='block';
+    renderCols();
+    show('s2'); hide('s3'); hide('s4');
+  }catch(e){showFerr('Error al leer: '+e.message);}
+}
+
+// ── Columnas ───────────────────────────────────────────────────────────────
+function renderCols(){
+  document.getElementById('rcnt').textContent=rows.length;
+  document.getElementById('ccnt').textContent=headers.length;
+  const div=document.getElementById('colbtns');
+  div.innerHTML='';
+  headers.forEach((h,i)=>{
+    const b=document.createElement('button');
+    b.className='cbtn'; b.textContent=h;
+    b.onclick=()=>selectCol(i,b);
+    div.appendChild(b);
+  });
+  document.getElementById('prevbox').style.display='none';
+}
+function selectCol(i,btn){
+  document.querySelectorAll('.cbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  colIdx=i;
+  document.getElementById('prevtxt').textContent=(rows[0]?.[i]||'(vacío)').toString().slice(0,240);
+  document.getElementById('prevbox').style.display='block';
+  document.getElementById('runbtn').textContent='🚀 Iniciar clasificación ('+rows.length+' contratos)';
+  show('s3'); hide('s4'); results=[];
+}
+
+// ── Prompts ────────────────────────────────────────────────────────────────
+const DOMINIO=`
+CONTEXTO: Todos los contratos son de CONSTRUCCIÓN en Colombia. Tres tipos posibles:
+
+TIPO 1 — OBRA CIVIL (edificaciones, saneamiento, urbanismo)
+Servicios: construcción edificaciones (72111500), cimentación/pilotaje (72191600), instalaciones eléctricas (72121500), hidráulicas/sanitarias (72131500/72131600), carpintería/acabados (72141500/72141600/72141700), estudios y diseños (72101700), topografía (72101600), interventoría (72181500), gestión ambiental (77151600).
+Materiales: cemento Portland (30121500), concreto premezclado (30121600), acero refuerzo (23101500), bloques/ladrillos (30131500/30131600), arena/grava (11131500), tubería PVC (30181500), tubería HDPE (30181600), cable eléctrico (30191700), cerámica/porcelanato (30161500), pintura (30151600), impermeabilizantes (30221500), madera estructural (30111500), puertas/ventanas (30201500/30111700), vidrio (30171500), geotextiles (30221600).
+Equipos: excavadoras (22101500), retroexcavadoras (22101800), compactadoras (22121500), mezcladoras (22131500), grúas (22111500), andamios (27161600), compresores (31151500).
+EPP: cascos (27151500), guantes (27151600), botas (27151700), arneses (27152000).
+
+TIPO 2 — INFRAESTRUCTURA VIAL (carreteras, vías, andenes, ciclovías, puentes)
+Servicios: construcción/pavimentación vías (72151500), señalización vial (72151600), puentes/viaductos (72151700), estudios/diseños (72101700), topografía (72101600), interventoría (72181500), gestión ambiental/PMT (77151600).
+Materiales: asfalto/mezcla asfáltica (15111600), cemento (30121500), concreto (30121600), acero refuerzo (23101500), agregados pétreos (11131500), geotextiles (30221600), tubería PVC alcantarillado (30181500), señales tránsito (30231500), pinturas tráfico (30231600), tachas (30231700), emulsión asfáltica (15111600).
+Equipos: pavimentadoras (22121600), fresadoras (22151500), motoniveladoras (22101700), rodillos/compactadoras (22121500), excavadoras (22101500), volquetas (25111600).
+EPP: cascos (27151500), chalecos alta visibilidad (27152100), botas (27151700).
+
+TIPO 3 — INTERVENTORÍA (supervisión técnica, administrativa y financiera)
+Servicios: interventoría técnica (72181500), supervisión/inspección (72181600), consultoría ingeniería (81111800), auditoría técnica/financiera (80121600/80121700), gestión proyectos (80191500).
+Apoyo: laboratorio ensayos (81181500), topografía (72101600), monitoreo ambiental (77131500/77131600), estudios geotécnicos (72191500), fotografía/documentación (82121500).
+Equipos: medición (41111500/41111600), topográficos (41151600), ensayo no destructivo (41121600), computadores (43201600).
+Gestión: servicios jurídicos (80131500), gestión documental (85161500), contabilidad (80121500), seguros (80151500/80152000).
+EPP: cascos (27151500), botas (27151700), chalecos (27152100).
+`;
+
+const SYS_F1=`Eres un ingeniero civil experto en contratación pública colombiana con 20 años de experiencia.
+${DOMINIO}
+Analiza el objeto del contrato e identifica tipo, subtipo, actividades, materiales, equipos y servicios.
+Responde SOLO JSON válido sin texto adicional ni backticks:
+{"tipo_principal":"obra_civil|infraestructura_vial|interventoria","subtipo":"texto","actividades_principales":["..."],"materiales_clave":["..."],"equipos_clave":["..."],"servicios_tecnicos":["..."],"personal_clave":["..."],"epp_requerido":["..."],"codigos_unspsc_sugeridos":["XXXXXXXX"]}`;
+
+const SYS_F2=`Eres un experto certificado en UNSPSC especializado en contratos de construcción colombianos.
+${DOMINIO}
+Se te dará el objeto de un contrato y su análisis técnico. Asigna TODOS los códigos UNSPSC aplicables a nivel CLASE.
+REGLAS: Usa los códigos del dominio como base. Agrega adicionales según el subtipo. Cubre servicios, materiales, equipos, EPP, transporte, gestión, laboratorio. Relevancia: Alta=esencial, Media=necesario, Baja=periférico. Sin límite de cantidad.
+Responde SOLO JSON válido sin texto adicional ni backticks:
+{"codigos":[{"codigo":"XXXXXXXX","titulo":"Nombre UNSPSC en español","nivel":"Clase","relevancia":"Alta|Media|Baja","justificacion":"razón específica máx 120 chars"}]}`;
+
+// ── Llamada a la API (directa — sin proxy) ─────────────────────────────────
+async function apiCall(system,userMsg,maxTokens){
+  const r=await fetch(API_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01'},
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:maxTokens,system,messages:[{role:'user',content:userMsg}]})
+  });
+  const d=await r.json();
+  if(!r.ok||d.error) throw new Error(d.error?.message||'HTTP '+r.status);
+  return (d.content||[]).map(b=>b.text||'').join('');
+}
+
+// ── Parseo de JSON robusto ─────────────────────────────────────────────────
+function parseJSON(raw){
+  if(!raw)return null;
+  try{return JSON.parse(raw.replace(/```json|```/g,'').trim());}catch{}
+  try{const s=raw.indexOf('{'),e=raw.lastIndexOf('}');if(s!==-1&&e>s)return JSON.parse(raw.slice(s,e+1));}catch{}
+  return null;
+}
+
+// ── Clasificar un contrato ─────────────────────────────────────────────────
+async function classifyOne(txt,idx){
+  const addLog=msg=>{
+    const el=document.getElementById('errlog');
+    el.style.display='block';
+    el.innerHTML+=`<div>[#${idx+1}] ${msg}</div>`;
+    el.scrollTop=el.scrollHeight;
+  };
+  // Fase 1
+  let analisis=null;
+  try{
+    const raw1=await apiCall(SYS_F1,`Analiza este objeto de contrato:\n\n"${txt}"`,1500);
+    analisis=parseJSON(raw1);
+    if(!analisis)addLog('Fase 1: no se pudo parsear JSON');
+  }catch(e){addLog('Fase 1 error: '+e.message);}
+  await sleep(500);
+  // Fase 2
+  const msg2=analisis
+    ?`OBJETO: "${txt}"\n\nANÁLISIS:\n- Tipo: ${analisis.tipo_principal}\n- Subtipo: ${analisis.subtipo}\n- Actividades: ${(analisis.actividades_principales||[]).join(', ')}\n- Materiales: ${(analisis.materiales_clave||[]).join(', ')}\n- Equipos: ${(analisis.equipos_clave||[]).join(', ')}\n- Servicios: ${(analisis.servicios_tecnicos||[]).join(', ')}\n- Códigos sugeridos: ${(analisis.codigos_unspsc_sugeridos||[]).join(', ')}\n\nAsigna TODOS los códigos UNSPSC aplicables.`
+    :`OBJETO: "${txt}"\n\nContrato de construcción colombiano. Asigna TODOS los códigos UNSPSC a nivel clase.`;
+  try{
+    const raw2=await apiCall(SYS_F2,msg2,5000);
+    const result=parseJSON(raw2);
+    if(result?.codigos?.length)return{codigos:result.codigos,analisis};
+    addLog('Fase 2: sin códigos. Raw: '+(raw2||'').slice(0,150));
+  }catch(e){addLog('Fase 2 error: '+e.message);}
+  return{codigos:[],analisis};
+}
+
+// ── Ejecutar todos ─────────────────────────────────────────────────────────
+async function runAll(){
+  if(!API_KEY){alert('Primero guarda tu API Key.');return;}
+  if(colIdx<0){alert('Selecciona la columna del objeto.');return;}
+  stopFlag=false; results=[];
+  document.getElementById('runbtn').style.display='none';
+  document.getElementById('errlog').innerHTML='';
+  document.getElementById('errlog').style.display='none';
+  show('pwrap'); hide('swrap'); hide('s4'); show('s4');
+  document.getElementById('s4tit').textContent='Resultados (en progreso…)';
+  hide('dlbtn');
+  document.getElementById('rlist').innerHTML='';
+  const tot=rows.length;
+  document.getElementById('ptot').textContent=tot;
+  let errCount=0;
+
+  for(let i=0;i<tot;i++){
+    if(stopFlag)break;
+    const txt=(rows[i][colIdx]||'').toString().trim();
+    setProgress(i+1,tot,'Analizando #'+(i+1)+' de '+tot+'…');
+    let cl={codigos:[],analisis:null};
+    if(txt){try{cl=await classifyOne(txt,i);}catch(e){console.error(e);}}
+    if(!cl.codigos.length)errCount++;
+    results.push({row:rows[i],cl});
+    renderResults(false,errCount);
+    if(i<tot-1)await sleep(600);
+  }
+  setProgress(tot,tot,'✅ Clasificación completada');
+  hide('pwrap');
+  document.getElementById('runbtn').textContent='🔄 Reclasificar';
+  document.getElementById('runbtn').style.display='inline-flex';
+  renderResults(true,errCount);
+}
+
+function setProgress(cur,tot,msg){
+  const pct=Math.round((cur/tot)*100);
+  document.getElementById('pcur').textContent=cur;
+  document.getElementById('ptot').textContent=tot;
+  document.getElementById('ppct').textContent=pct+'%';
+  document.getElementById('pbar').style.width=pct+'%';
+  document.getElementById('plast').textContent=msg;
+}
+
+// ── Render resultados ──────────────────────────────────────────────────────
+function renderResults(done,errCount=0){
+  const all=results.flatMap(r=>r.cl.codigos||[]);
+  if(done){
+    show('swrap','flex');
+    document.getElementById('s-ct').textContent=results.length;
+    document.getElementById('s-uq').textContent=new Set(all.map(c=>c.codigo)).size;
+    document.getElementById('s-av').textContent=results.length?(all.length/results.length).toFixed(1):'0';
+    document.getElementById('s-cl').textContent=all.filter(c=>c.nivel==='Clase').length;
+    document.getElementById('s-mx').textContent=results.length?Math.max(...results.map(r=>r.cl.codigos?.length||0)):0;
+    document.getElementById('s-er').textContent=errCount;
+    document.getElementById('s4tit').textContent='Resultados';
+    show('dlbtn','inline-flex');
+  }
+  const list=document.getElementById('rlist');
+  list.innerHTML='';
+  results.slice(0,12).forEach(({row,cl},i)=>{
+    const obj=(row[colIdx]||'').toString();
+    const codes=cl.codigos||[];
+    const analisis=cl.analisis||null;
+    const cCl=codes.filter(c=>c.nivel==='Clase').length;
+    const cAl=codes.filter(c=>c.relevancia==='Alta').length;
+
+    let analisisHtml='';
+    if(analisis){
+      const tipoBadge={obra_civil:'🏗️ Obra Civil',infraestructura_vial:'🛣️ Infraestructura Vial',interventoria:'🔍 Interventoría'}[analisis.tipo_principal]||analisis.tipo_principal||'';
+      const items=[['Subtipo',analisis.subtipo],['Actividades',(analisis.actividades_principales||[]).join(' · ')],['Materiales',(analisis.materiales_clave||[]).join(' · ')],['Equipos',(analisis.equipos_clave||[]).join(' · ')],['Personal',(analisis.personal_clave||[]).join(' · ')]].filter(([,v])=>v&&String(v).trim());
+      analisisHtml=`<div style="background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:10px 12px;margin:10px 0 8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:10px;font-weight:700;color:#60a5fa;text-transform:uppercase">🔍 Análisis Fase 1</span>
+          <span style="background:rgba(96,165,250,0.12);border:1px solid #60a5fa55;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:700;color:#60a5fa">${esc(tipoBadge)}</span>
+        </div>
+        ${items.map(([lbl,val])=>`<div style="display:flex;gap:6px;margin-bottom:3px;font-size:11px"><span style="color:#3d5a7a;min-width:90px;flex-shrink:0">${esc(lbl)}</span><span style="color:#94a3b8;line-height:1.4">${esc(String(val))}</span></div>`).join('')}
+      </div>`;
+    }
+
+    const d=document.createElement('div');
+    d.className='rrow';
+    d.innerHTML=`<div class="rhdr" onclick="toggle(this)">
+      <div class="robj"><span class="rnum">#${i+1} </span>${esc(obj.slice(0,100))}${obj.length>100?'…':''}</div>
+      <div class="rbadges">
+        ${cCl>0?bdg('#a78bfa',cCl+' Clase'):''}
+        ${cAl>0?bdg('#4ade80',cAl+' Alta'):''}
+        ${codes.length>0?bdg('#3b82f6',codes.length+' total'):bdg('#ef4444','Sin códigos')}
+        <span style="color:#2d4a6b;font-size:11px;margin-left:2px">▼</span>
+      </div>
+    </div>
+    <div class="rcodes">
+      ${analisisHtml}
+      <div class="cgrid">${codes.map(chip).join('')}</div>
+      ${codes.length?'<p style="margin:6px 0 0;font-size:10px;color:#2d4a6b;font-style:italic">💡 Pasa el cursor sobre cada código para ver la justificación</p>':'<div style="background:rgba(239,68,68,0.05);border:1px solid #7f1d1d33;border-radius:8px;padding:8px 12px;font-size:11px;color:#f87171;margin-top:6px">⚠️ Sin códigos — revisa el log de errores en el paso 3.</div>'}
+    </div>`;
+    list.appendChild(d);
+  });
+  document.getElementById('rmore').textContent=results.length>12?`… y ${results.length-12} contratos más en el CSV`:'';
+}
+
+function toggle(hdr){
+  const rc=hdr.nextElementSibling;
+  const open=rc.style.display==='block';
+  rc.style.display=open?'none':'block';
+  const arr=hdr.querySelector('span:last-child');
+  if(arr)arr.textContent=open?'▼':'▲';
+}
+function bdg(c,t){return`<span class="badge" style="color:${c};background:${c}22;border-color:${c}">${t}</span>`;}
+function chip(c){
+  const nc=NC[c.nivel]||'#94a3b8',rc=RC[c.relevancia]||'#64748b';
+  return`<div class="chip" style="background:${rc}18;border-color:${rc}55" title="${esc(c.justificacion||'')}">
+    <span class="cid" style="color:${nc}">${esc(c.codigo)}</span>
+    <span class="ctitle">${esc(c.titulo)}</span>
+    <span class="clevel" style="color:${nc};background:${nc}22;border-color:${nc}66">${esc(c.nivel)}</span>
+    <span class="crel" style="color:${rc};background:${rc}18;border-color:${rc}66">${esc(c.relevancia)}</span>
+  </div>`;}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── Descargar CSV ──────────────────────────────────────────────────────────
+function dlResults(){
+  const max=Math.max(...results.map(r=>r.cl.codigos?.length||0),1);
+  const ch=[];
+  for(let i=1;i<=max;i++)ch.push(`UNSPSC_Codigo_${i}`,`UNSPSC_Titulo_${i}`,`UNSPSC_Nivel_${i}`,`UNSPSC_Relevancia_${i}`,`UNSPSC_Justificacion_${i}`);
+  const oh=[...headers,'Total_Codigos_UNSPSC',...ch];
+  const dataRows=results.map(({row,cl})=>{
+    const base=headers.map((_,i)=>String(row[i]??''));
+    const codes=cl.codigos||[],cols=[];
+    for(let i=0;i<max;i++){const c=codes[i];cols.push(c?.codigo||'',c?.titulo||'',c?.nivel||'',c?.relevancia||'',c?.justificacion||'');}
+    return[...base,String(codes.length),...cols];
+  });
+  const csv=[oh,...dataRows].map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const url=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  Object.assign(document.createElement('a'),{href:url,download:'contratos_UNSPSC.csv'}).click();
+  URL.revokeObjectURL(url);
+}
+
+function show(id,d='block'){const el=document.getElementById(id);if(el)el.style.display=d;}
+function hide(id){const el=document.getElementById(id);if(el)el.style.display='none';}
+</script>
+</body>
+</html>
